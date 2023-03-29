@@ -2,7 +2,6 @@ name = "stas-gpt"
 main = "src/index.ts"
 usage_model = "bundled"
 compatibility_date = "2023-03-25"
-compatibility_flags = [ "nodejs_compat" ]
 env = { }
 
 [triggers]
@@ -41,3 +40,4 @@ OPENAI_CHAT_SYSTEM_MESSAGE = '''
 [[kv_namespaces]]
 binding = "STAS_GPT_KV"
 id = "cb520da74c0a4e29a79037966984226a"
+preview_id = "7be505e4c25249a8af5db27549e0318d"

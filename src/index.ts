@@ -4,7 +4,7 @@ import {
 } from "vk-io/lib/api/schemas/objects";
 import { generateChatGPTResponse } from "./stas-gpt/functions/openai/chat-completion";
 import { convertToBotMessages as convertToBotChatHistory } from "./stas-gpt/functions/utils/message";
-import { extractResponseAfter } from "./stas-gpt/functions/utils/string";
+import { extractResponse } from "./stas-gpt/functions/utils/string";
 import { getVkMessageHistoryFor, isValidMessage, sendMessage } from "./stas-gpt/functions/vk/message";
 
 addEventListener("fetch", (event) => {
@@ -15,10 +15,10 @@ async function handleRequest(
   request: Request<unknown, CfProperties<unknown>>
 ): Promise<Response> {
   const requestBody: any = await request.json();
-  console.log("handleRequest", requestBody);
+  console.log("handleRequest: requestBody:", requestBody);
 
   if (!requestBody) {
-    console.error("Missing [requestBody]!");
+    console.error("handleRequest: Missing requestBody");
     return new Response("ok");
   }
 
@@ -27,7 +27,7 @@ async function handleRequest(
   } else if (requestBody.type === "message_new") {
     const callbackMessageNew: CallbackMessageNew = requestBody;
     const message: MessagesMessage = callbackMessageNew.object.message;
-    console.log('handleRequest', message);
+    console.log('handleRequest: message:', message);
     await handleMessage(message);
     return new Response("ok");
   }
@@ -42,16 +42,16 @@ async function handleMessage(message: MessagesMessage): Promise<void> {
 
   const vkChatHistory: MessagesMessage[] = await getVkMessageHistoryFor(message);
   const botChatHistory: ChatCompletionRequestMessage[] = await convertToBotChatHistory(vkChatHistory);
-  console.log("handleRequest", botChatHistory);
+  console.log("handleMessage: botChatHistory:", botChatHistory);
 
   const botResponse: string | undefined = await generateChatGPTResponse(botChatHistory);
 
   if (!botResponse) {
-    console.error('Error: GPT response is empty or invalid', botResponse);
+    console.error('handleMessage: GPT response is empty or invalid: botResponse:', botResponse);
     return;
   }
 
-  const processedBotResponse: string = extractResponseAfter(botResponse!);
+  const processedBotResponse: string = extractResponse(botResponse!);
   const peerId = message.peer_id!;
   const messageId = message.id!;
   await sendMessage(peerId, messageId, processedBotResponse);

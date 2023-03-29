@@ -18,7 +18,7 @@ export async function generateChatGPTResponse(
     messageHistory.push(systemMessage);
     messageHistory.push(...Array.from(chatHistory).reverse());
 
-    console.log("messageHistory: ", messageHistory);
+    console.log("generateChatGPTResponse: messageHistory:", messageHistory);
 
     const createChatCompletionRequest: CreateChatCompletionRequest = {
       model: OPENAI_MODEL,
@@ -29,7 +29,7 @@ export async function generateChatGPTResponse(
       createChatCompletionRequest
     );
 
-    console.log("generateChatGPTResponse response", data);
+    console.log("generateChatGPTResponse: data:", data);
 
     if (
       data &&
@@ -39,11 +39,11 @@ export async function generateChatGPTResponse(
     ) {
       return data.choices[0].message.content.trim();
     } else {
-      console.error("Missing data in GPT response", data);
+      console.error("generateChatGPTResponse: Error generating GPT response: data:", data);
       return undefined;
     }
   } catch (error) {
-    console.error("Error generating GPT response", error);
+    console.error("generateChatGPTResponse: Error generating GPT response: error:", error);
     return undefined;
   }
 }
@@ -60,9 +60,9 @@ async function fetchGPTResponse(
     body: JSON.stringify(createChatCompletionRequest),
   };
 
-  console.log("generateChatGPTResponse request", requestInit);
+  console.log("fetchGPTResponse: requestInit:", requestInit);
   console.log(
-    "generateChatGPTResponse requestBody",
+    "fetchGPTResponse: createChatCompletionRequest:",
     createChatCompletionRequest
   );
 
@@ -71,7 +71,7 @@ async function fetchGPTResponse(
     const data: CreateChatCompletionResponse = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching GPT response', error);
+    console.error('fetchGPTResponse: Error fetching GPT response: error:', error);
     return undefined;
   }
 }

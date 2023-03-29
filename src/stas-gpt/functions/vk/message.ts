@@ -1,5 +1,5 @@
 import { MessagesForeignMessage, MessagesMessage } from "vk-io/lib/api/schemas/objects";
-import { getForwardHistory, getReplyHistory, getVkPrivateChatHistory } from "./chat-history";
+import { getVkForwardHistory, getVkReplyHistory, getVkPrivateChatHistory } from "./chat-history";
 import { fetchBotId } from "./user";
 
 export async function getVkMessageHistoryFor(
@@ -31,15 +31,15 @@ export async function getVkMessageHistoryFor(
             if (isGroupChat) {
                 const fwdMessages: MessagesForeignMessage[] | undefined = message.fwd_messages;
                 if (fwdMessages && fwdMessages.length > 0) {
-                    return await getForwardHistory(message);
+                    return await getVkForwardHistory(message);
                 } else {
-                    return await getReplyHistory(message);
+                    return await getVkReplyHistory(message);
                 }
             } else {
                 return await getVkPrivateChatHistory(peerId);
             }
         } else {
-            console.warn("Message ignored!", {
+            console.warn("getVkMessageHistoryFor: Message ignored!:", {
                 messageText: messageText,
                 peerId: peerId,
                 isGroupChat: isGroupChat,
@@ -51,7 +51,7 @@ export async function getVkMessageHistoryFor(
             });
         }
     } catch (error) {
-        console.error("Error handling request", error);
+        console.error("getVkMessageHistoryFor: Error handling request: error:", error);
     }
 
     return [];
@@ -73,7 +73,7 @@ export async function sendMessage(
         await addAnsweredMessage(peerId, messageId);
         return sentData;
     } catch (error) {
-        console.error("sendMessage", error);
+        console.error("sendMessage: error:", error);
     }
 }
 
@@ -83,7 +83,7 @@ async function fetchMessagesSend(url: URL) {
     };
     const sendResponse: Response = await fetch(url, requestInit);
     const sentData: any = await sendResponse.json();
-    console.log("fetchMessagesSend", sentData);
+    console.log("fetchMessagesSend: sentData:", sentData);
     return sentData;
 }
 
@@ -92,11 +92,11 @@ function getMessagesSendUrl(peerId: number, forward: any, messageContent: string
     const randomId: number = Math.floor(Math.random() * 1000000000);
     url.searchParams.append("access_token", VK_COMMUNITY_API_TOKEN);
     url.searchParams.append("v", VK_API_VERSION);
-    url.searchParams.append("peer_ids", peerId.toString());
+    url.searchParams.append("peer_id", peerId.toString());
     url.searchParams.append("forward", JSON.stringify(forward));
     url.searchParams.append("message", messageContent);
     url.searchParams.append("random_id", randomId.toString());
-    console.log("getMessagesSendUrl", url.toString());
+    console.log("getMessagesSendUrl: url:", url.toString());
     return url;
 }
 
@@ -123,7 +123,7 @@ export function isValidMessage(message: MessagesMessage): boolean {
     }
 
     if (errorMsg) {
-        console.error(`Error: Missing value: ${errorMsg}`, message);
+        console.error(`isValidMessage: Error: Missing value: ${errorMsg}: message:`, message);
     }
 
     return !errorMsg;

@@ -1,4 +1,4 @@
-export function extractResponseAfter(inputStr: string): string {
+export function extractResponse(inputStr: string): string {
   const targetStr1 = RESPONSE_SUBSTRING;
   const targetStr2 = "[GPT]:";
   const escapeRegex = /[-/\\^$*+?.()|[\]{}]/g;

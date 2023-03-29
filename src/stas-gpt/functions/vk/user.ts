@@ -20,22 +20,22 @@ export async function getUserName(userId: number): Promise<string | undefined> {
         url.searchParams.append("user_ids", userId.toString());
         url.searchParams.append("fields", "screen_name");
 
-        console.log("users.get request URL", url.toString());
+        console.log("getUserName: url:", url.toString());
 
         const response: Response = await fetch(url, requestInit);
         const data: any = await response.json();
-        console.log("users.get response", data);
+        console.log("getUserName: data:", data);
 
         if (data.response && data.response[0]) {
             const user: any = data.response[0];
             // const cleanScreenName = user.screen_name.replace(/[^a-zA-Z0-9]/g, "");
             return `@${user.screen_name}`;
         } else {
-            console.error("Error fetching user screen name for id [userId]", data);
+            console.error(`getUserName: Error fetching user screen name for id [${userId}]: data:`, data);
             return undefined;
         }
     } catch (error) {
-        console.error("Error getting user screen name for id [userId]", error);
+        console.error(`getUserName: Error getting user screen name for id [${userId}]: error:`, error);
         return undefined;
     }
 }
@@ -54,11 +54,11 @@ export async function fetchBotId(): Promise<void> {
         url.searchParams.append("access_token", VK_COMMUNITY_API_TOKEN);
         url.searchParams.append("v", VK_API_VERSION);
 
-        console.log("groups.getById request URL", url.toString());
+        console.log("fetchBotId: url:", url.toString());
 
         const response: Response = await fetch(url, requestInit);
         const data: any = await response.json();
-        console.log("groups.getById response", data);
+        console.log("fetchBotId: data:", data);
 
         const groupsGetByIdResponse: GroupsGetByIdObjectLegacyResponse =
             data.response;
@@ -70,9 +70,9 @@ export async function fetchBotId(): Promise<void> {
         ) {
             globalThis.botId = Math.abs(groupsGetByIdResponse[0].id);
         } else {
-            console.error("Error fetching bot ID", data);
+            console.error("fetchBotId: Error fetching bot ID: data:", data);
         }
     } catch (error) {
-        console.error("Error getting bot ID", error);
+        console.error("fetchBotId: Error getting bot ID: error:", error);
     }
 }

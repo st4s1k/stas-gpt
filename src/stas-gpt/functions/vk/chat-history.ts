@@ -15,27 +15,27 @@ export async function getVkPrivateChatHistory(
         url.searchParams.append("peer_id", peerId.toString());
         url.searchParams.append("count", VK_MESSAGE_HISTORY_LIMIT.toString());
 
-        console.log("messages.getHistory request URL", url.toString());
+        console.log("getVkPrivateChatHistory: url:", url.toString());
 
         const response: Response = await fetch(url, requestInit);
         const data: any = await response.json();
-        console.log("messages.getHistory response", data);
+        console.log("getVkPrivateChatHistory: data:", data);
 
         const getHistoryResponse: MessagesGetHistoryResponse = data.response;
 
         if (getHistoryResponse && getHistoryResponse.items) {
             return getHistoryResponse.items;
         } else {
-            console.error("Error fetching chat history", data);
+            console.error("getVkPrivateChatHistory: Error fetching chat history: data:", data);
             return [];
         }
     } catch (error) {
-        console.error("Error getting chat history", error);
+        console.error("getVkPrivateChatHistory: Error getting chat history: error:", error);
         return [];
     }
 }
 
-export async function getReplyHistory(
+export async function getVkReplyHistory(
     message: MessagesMessage
 ): Promise<MessagesMessage[]> {
     let replyChain: MessagesMessage[] = [];
@@ -63,13 +63,13 @@ export async function getReplyHistory(
             );
 
             console.log(
-                "messages.getByConversationMessageId request URL",
+                "getVkReplyHistory: url:",
                 url.toString()
             );
 
             const response: Response = await fetch(url, requestInit);
             const data: any = await response.json();
-            console.log("messages.getByConversationMessageId response", data);
+            console.log("getVkReplyHistory: data:", data);
 
             const fetchedMessage: MessagesMessage = data.response.items[0];
             if (fetchedMessage) {
@@ -79,23 +79,23 @@ export async function getReplyHistory(
                 break;
             }
         } catch (error) {
-            console.error("Error fetching reply history", error);
+            console.error("getVkReplyHistory: Error fetching reply history: error:", error);
             break;
         }
     }
 
-    console.log("replyChain", replyChain);
+    console.log("getVkReplyHistory: replyChain:", replyChain);
 
     return replyChain;
 }
 
-export async function getForwardHistory(
+export async function getVkForwardHistory(
     message: MessagesMessage
 ): Promise<MessagesMessage[]> {
     const forwardHistory: MessagesMessage[] | undefined = message.fwd_messages;
     if (!forwardHistory) {
-        console.error("Missing forward messages")
-        return [];
+        console.error("getVkForwardHistory: Missing forward messages: message:", message);
+        return [message];
     }
     forwardHistory.push(message);
     return forwardHistory.reverse();
