@@ -5,7 +5,7 @@ import {
 import { generateChatGPTResponse } from "./stas-gpt/functions/openai/chat-completion";
 import { convertToBotMessages as convertToBotChatHistory } from "./stas-gpt/functions/utils/message";
 import { extractResponse } from "./stas-gpt/functions/utils/string";
-import { getVkMessageHistoryFor, isValidMessage, sendMessage } from "./stas-gpt/functions/vk/message";
+import { getMessageId, getVkMessageHistoryFor, isValidMessage, sendMessage } from "./stas-gpt/functions/vk/message";
 
 addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
@@ -51,8 +51,9 @@ async function handleMessage(message: MessagesMessage): Promise<void> {
     return;
   }
 
+  const peerId: number = message.peer_id!;
+  const messageId: number = getMessageId(message);
   const processedBotResponse: string = extractResponse(botResponse!);
-  const peerId = message.peer_id!;
-  const messageId = message.id!;
+
   await sendMessage(peerId, messageId, processedBotResponse);
 }

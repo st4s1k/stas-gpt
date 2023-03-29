@@ -1,5 +1,5 @@
 import { MessagesForeignMessage, MessagesMessage } from "vk-io/lib/api/schemas/objects";
-import { getVkForwardHistory, getVkReplyHistory, getVkPrivateChatHistory } from "./chat-history";
+import { getVkForwardHistory, getVkPrivateChatHistory, getVkReplyHistory } from "./chat-history";
 import { fetchBotId } from "./user";
 
 export async function getVkMessageHistoryFor(
@@ -11,9 +11,7 @@ export async function getVkMessageHistoryFor(
         const messageText: string = message.text!;
         const peerId: number = message.peer_id!;
         const isGroupChat: boolean = peerId > 2000000000;
-        const messageId: number = isGroupChat
-            ? message.conversation_message_id!
-            : message.id!;
+        const messageId: number = getMessageId(message);
         const isMsgAnswered: boolean = await isMessageAnswered(
             peerId,
             messageId,
@@ -68,6 +66,7 @@ export async function sendMessage(
             conversation_message_ids: [messageId],
             is_reply: true,
         };
+        console.log("sendMessage: forward:", forward);
         const url: URL = getMessagesSendUrl(peerId, forward, messageContent);
         const sentData: any = await fetchMessagesSend(url);
         await addAnsweredMessage(peerId, messageId);
@@ -75,6 +74,14 @@ export async function sendMessage(
     } catch (error) {
         console.error("sendMessage: error:", error);
     }
+}
+
+export function getMessageId(message: MessagesMessage): number {
+    const peerId: number = message.peer_id!;
+    const isGroupChat: boolean = peerId > 2000000000;
+    return isGroupChat
+        ? message.conversation_message_id!
+        : message.id!;
 }
 
 async function fetchMessagesSend(url: URL) {
