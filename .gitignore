@@ -1,0 +1,5 @@
+/dist
+/node_modules
+/.dev.vars
+/chat_test.html
+/chat-test.json
