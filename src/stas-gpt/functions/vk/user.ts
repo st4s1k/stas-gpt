@@ -10,6 +10,11 @@ export async function getUserName(userId: number): Promise<string | undefined> {
             return BOT_MENTION;
         }
 
+        const userName: string | undefined = await findUserNameInKv(userId);
+        if (userName) {
+            return userName;
+        }
+
         const requestInit: RequestInit = {
             method: "GET",
         };
@@ -28,8 +33,9 @@ export async function getUserName(userId: number): Promise<string | undefined> {
 
         if (data.response && data.response[0]) {
             const user: any = data.response[0];
-            // const cleanScreenName = user.screen_name.replace(/[^a-zA-Z0-9]/g, "");
-            return `@${user.screen_name}`;
+            const userName: string = `@${user.screen_name}`;
+            await saveUserName(userId, userName);
+            return userName;
         } else {
             console.error(`getUserName: Error fetching user screen name for id [${userId}]: data:`, data);
             return undefined;
@@ -37,7 +43,28 @@ export async function getUserName(userId: number): Promise<string | undefined> {
     } catch (error) {
         console.error(`getUserName: Error getting user screen name for id [${userId}]: error:`, error);
         return undefined;
+    } finally {
+        // Wait for 1 second before allowing the next API call
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
+}
+
+async function findUserNameInKv(userId: number) {
+    const userNamesString: string | null = await STAS_GPT_KV.get("userNames");
+    const userNames: Map<number, string> = userNamesString
+        ? new Map(JSON.parse(userNamesString))
+        : new Map();
+    const userName = userNames.get(userId);
+    return userName;
+}
+
+async function saveUserName(userId: number, userName: string) {
+    const userNamesString: string | null = await STAS_GPT_KV.get("userNames");
+    const userNames: Map<number, string> = userNamesString
+        ? new Map(JSON.parse(userNamesString))
+        : new Map();
+    userNames.set(userId, userName);
+    await STAS_GPT_KV.put("userNames", JSON.stringify(Array.from(userNames)));
 }
 
 export async function fetchBotId(): Promise<void> {

@@ -29,8 +29,6 @@ export async function generateChatGPTResponse(
       createChatCompletionRequest
     );
 
-    console.log("generateChatGPTResponse: data:", data);
-
     if (
       data &&
       data.choices &&
@@ -69,6 +67,7 @@ async function fetchGPTResponse(
   try {
     const response: Response = await fetch(OPENAI_API_URL, requestInit);
     const data: CreateChatCompletionResponse = await response.json();
+    console.log("fetchGPTResponse: data:", data);
     return data;
   } catch (error) {
     console.error('fetchGPTResponse: Error fetching GPT response: error:', error);
