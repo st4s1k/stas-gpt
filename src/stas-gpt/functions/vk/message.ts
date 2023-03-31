@@ -1,31 +1,30 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { MessagesForeignMessage, MessagesMessage } from "vk-io/lib/api/schemas/objects";
 import { getVkForwardHistory, getVkPrivateChatHistory, getVkReplyHistory } from "./chat-history";
-import { fetchBotId } from "./user";
+import { VkForward } from "./objects";
+import { fetchBotId, fetchUnknownUserNames, fetchUserNamesKv, isBotId, persistUserNames } from "./user";
 
 export async function getVkMessageHistoryFor(
     message: MessagesMessage
 ): Promise<MessagesMessage[]> {
     try {
-        await fetchBotId();
+        await initVkContext();
+        await fetchUnknownUserNames(message);
 
-        const messageText: string = message.text!;
         const peerId: number = message.peer_id!;
-        const isGroupChat: boolean = peerId > 2000000000;
         const messageId: number = getMessageId(message);
-        const isMsgAnswered: boolean = await isMessageAnswered(
-            peerId,
-            messageId,
-            isGroupChat
-        );
-        const isBotReferenced: boolean = !!(
+        const isMsgAnswered: boolean = await isMessageAnswered(peerId, messageId);
+        const isGroupChat: boolean = peerId > 2000000000;
+        const isBotReferenced = !!(
             globalThis.botId &&
             message.reply_message &&
-            Math.abs(message.reply_message.from_id) === globalThis.botId
+            isBotId(message.reply_message.from_id)
         );
+        const messageText: string = message.text!;
         const shouldAnswer: boolean =
             !isGroupChat || isBotReferenced || messageText.includes(BOT_MENTION);
 
-        if (!isMsgAnswered && globalThis.botId && shouldAnswer) {
+        if (globalThis.botId && !isMsgAnswered && shouldAnswer) {
             if (isGroupChat) {
                 const fwdMessages: MessagesForeignMessage[] | undefined = message.fwd_messages;
                 if (fwdMessages && fwdMessages.length > 0) {
@@ -50,6 +49,8 @@ export async function getVkMessageHistoryFor(
         }
     } catch (error) {
         console.error("getVkMessageHistoryFor: Error handling request: error:", error);
+    } finally {
+        await persistVkContext();
     }
 
     return [];
@@ -59,18 +60,17 @@ export async function sendMessage(
     peerId: number,
     messageId: number,
     messageContent: string
-) {
+): Promise<void> {
     try {
-        const forward: any = {
+        const forward: VkForward = {
             peer_id: peerId,
             conversation_message_ids: [messageId],
             is_reply: true,
         };
         console.log("sendMessage: forward:", forward);
         const url: URL = getMessagesSendUrl(peerId, forward, messageContent);
-        const sentData: any = await fetchMessagesSend(url);
+        await fetchMessagesSend(url);
         await addAnsweredMessage(peerId, messageId);
-        return sentData;
     } catch (error) {
         console.error("sendMessage: error:", error);
     }
@@ -84,17 +84,16 @@ export function getMessageId(message: MessagesMessage): number {
         : message.id!;
 }
 
-async function fetchMessagesSend(url: URL) {
+async function fetchMessagesSend(url: URL): Promise<void> {
     const requestInit: RequestInit = {
         method: "GET",
     };
     const sendResponse: Response = await fetch(url, requestInit);
-    const sentData: any = await sendResponse.json();
+    const sentData = await sendResponse.json();
     console.log("fetchMessagesSend: sentData:", sentData);
-    return sentData;
 }
 
-function getMessagesSendUrl(peerId: number, forward: any, messageContent: string) {
+function getMessagesSendUrl(peerId: number, forward: VkForward, messageContent: string) {
     const url: URL = new URL("https://api.vk.com/method/messages.send");
     const randomId: number = Math.floor(Math.random() * 1000000000);
     url.searchParams.append("access_token", VK_COMMUNITY_API_TOKEN);
@@ -136,37 +135,55 @@ export function isValidMessage(message: MessagesMessage): boolean {
     return !errorMsg;
 }
 
-export async function isMessageAnswered(
-    peerId: number,
-    messageId: number,
-    isGroupChat: boolean
-): Promise<boolean> {
-    const messageKey: string = isGroupChat
-        ? `с_${peerId}_${messageId}`
-        : `m_${peerId}_${messageId}`;
-    const answeredMessagesString: string | null = await STAS_GPT_KV.get(
-        "answeredMessages"
-    );
-    const answeredMessages: string[] = answeredMessagesString
-        ? JSON.parse(answeredMessagesString)
-        : [];
-    return answeredMessages.includes(messageKey);
+export async function isMessageAnswered(peerId: number, messageId: number): Promise<boolean> {
+    const messageKey: string = getMessageKey(peerId, messageId);
+    return globalThis.answeredMessages.includes(messageKey);
 }
 
-export async function addAnsweredMessage(
-    peerId: number,
-    messageId: number
-): Promise<void> {
-    const isGroupChat: boolean = peerId > 2000000000;
-    const messageKey: string = isGroupChat
+
+export async function addAnsweredMessage(peerId: number, messageId: number): Promise<void> {
+    const messageKey: string = getMessageKey(peerId, messageId);
+    globalThis.answeredMessages.push(messageKey);
+}
+
+function getMessageKey(peerId: number, messageId: number): string {
+    return peerId > 2000000000 // is group chat?
         ? `с_${peerId}_${messageId}`
         : `m_${peerId}_${messageId}`;
-    const answeredMessagesString: string | null = await STAS_GPT_KV.get(
-        "answeredMessages"
-    );
-    const answeredMessages: string[] = answeredMessagesString
-        ? JSON.parse(answeredMessagesString)
-        : [];
-    answeredMessages.push(messageKey);
-    await STAS_GPT_KV.put("answeredMessages", JSON.stringify(answeredMessages));
+}
+
+async function initVkContext() {
+    await fetchBotId();
+    await fetchAnsweredMessagesKv();
+    await fetchUserNamesKv();
+}
+
+export async function fetchAnsweredMessagesKv(): Promise<void> {
+    try {
+        const answeredMessagesString: string | null = await STAS_GPT_KV.get("answeredMessages");
+        if (answeredMessagesString) {
+            try {
+                globalThis.answeredMessages = JSON.parse(answeredMessagesString);
+            } catch (error) {
+                console.error("fetchAnsweredMessages: Error parsing answeredMessages from KV: error:", error);
+                globalThis.answeredMessages = [];
+            }
+        } else {
+            console.warn("fetchAnsweredMessages: answeredMessages value is null!");
+            globalThis.answeredMessages = [];
+        }
+    } catch (error) {
+        console.error("fetchAnsweredMessages: Error fetching answeredMessages from KV: error:", error);
+        globalThis.answeredMessages = [];
+    }
+}
+
+async function persistVkContext(): Promise<void> {
+    await persistAnsweredMessages();
+    await persistUserNames();
+}
+
+async function persistAnsweredMessages(): Promise<void> {
+    const answeredMessagesString = JSON.stringify(globalThis.answeredMessages);
+    await STAS_GPT_KV.put("answeredMessages", answeredMessagesString);
 }
