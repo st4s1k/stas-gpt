@@ -15,12 +15,11 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish",
-    "build": "wrangler publish --dry-run --outdir dist"
+    "build": "wrangler publish --dry-run --outdir dist",
+    "tail": "wrangler tail"
   },
   "type": "module",
   "dependencies": {
-    "node-fetch": "^3.3.1",
-    "openai": "^3.2.1",
-    "vk-io": "^4.8.1"
+    "node-fetch": "^3.3.1"
   }
 }

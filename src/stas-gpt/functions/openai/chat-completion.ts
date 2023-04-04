@@ -3,19 +3,24 @@ import {
     ChatCompletionRequestMessageRoleEnum,
     CreateChatCompletionRequest,
     CreateChatCompletionResponse
-} from "openai";
+} from "../../models/openai";
 
 export async function generateChatGPTResponse(
     chatHistory: ChatCompletionRequestMessage[]
-): Promise<string | undefined> {
+): Promise<string> {
     try {
-        const systemMessage: ChatCompletionRequestMessage = {
-            role: ChatCompletionRequestMessageRoleEnum.System,
+        const systemMessageUserPrompt: ChatCompletionRequestMessage = {
+            role: ChatCompletionRequestMessageRoleEnum.User,
             content: OPENAI_CHAT_SYSTEM_MESSAGE,
+        };
+        const systemMessageBotReply = {
+            role: ChatCompletionRequestMessageRoleEnum.Assistant,
+            content: "[GPT]: Хорошо, спрашивай.\n[СтасGPT]: Окей! Поехали!",
         };
 
         const messageHistory: ChatCompletionRequestMessage[] = [];
-        messageHistory.push(systemMessage);
+        messageHistory.push(systemMessageUserPrompt);
+        messageHistory.push(systemMessageBotReply);
         messageHistory.push(...Array.from(chatHistory).reverse());
 
         console.log("generateChatGPTResponse: messageHistory:", messageHistory);
@@ -24,6 +29,8 @@ export async function generateChatGPTResponse(
             model: OPENAI_MODEL,
             messages: messageHistory,
         };
+
+        console.log("generateChatGPTResponse: createChatCompletionRequest:", createChatCompletionRequest);
 
         const data: CreateChatCompletionResponse | undefined = await fetchGPTResponse(
             createChatCompletionRequest
@@ -38,17 +45,19 @@ export async function generateChatGPTResponse(
             return data.choices[0].message.content.trim();
         } else {
             console.error("generateChatGPTResponse: Error generating GPT response: data:", data);
-            return undefined;
+            throw new Error(`generateChatGPTResponse: Error generating GPT response: data: ${data}`);
         }
     } catch (error) {
         console.error("generateChatGPTResponse: Error generating GPT response: error:", error);
-        return undefined;
+        throw new Error(`generateChatGPTResponse: Error generating GPT response: error: ${error}`);
+    } finally {
+        console.log("generateChatGPTResponse: done");
     }
 }
 
 async function fetchGPTResponse(
     createChatCompletionRequest: CreateChatCompletionRequest
-): Promise<CreateChatCompletionResponse | undefined> {
+): Promise<CreateChatCompletionResponse> {
     const requestInit: RequestInit = {
         method: "POST",
         headers: {
@@ -59,10 +68,6 @@ async function fetchGPTResponse(
     };
 
     console.log("fetchGPTResponse: requestInit:", requestInit);
-    console.log(
-        "fetchGPTResponse: createChatCompletionRequest:",
-        createChatCompletionRequest
-    );
 
     try {
         const response: Response = await fetch(OPENAI_API_URL, requestInit);
@@ -71,6 +76,6 @@ async function fetchGPTResponse(
         return data;
     } catch (error) {
         console.error("fetchGPTResponse: Error fetching GPT response: error:", error);
-        return undefined;
+        throw new Error(`fetchGPTResponse: Error fetching GPT response: error: ${error}`);
     }
 }

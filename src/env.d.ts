@@ -12,10 +12,12 @@ declare global {
     const STAS_GPT_KV: KVNamespace;
     const RESPONSE_SUBSTRING: string;
     const BOT_MENTION: string;
+    const BOT_ID: number;
+    const ERROR_MESSAGE_STRING: string;
 
-    var botId: number;
+    var event: FetchEvent;
     var answeredMessages: string[] = [];
-    var userNames: Record<number, string> = {};
+    var userNames: Map<number, string>;
 }
 
 export {};
