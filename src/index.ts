@@ -86,14 +86,7 @@ async function handleBotResponse(
 ): Promise<void> {
     const peerId: number = getPeerId(message);
     const messageId: number = getMessageId(message);
-    let processedBotResponse: string = extractResponse(botResponse);
-    if (processedBotResponse === "") {
-        processedBotResponse = ERROR_MESSAGE_STRING;
-        console.log("handleBotResponse: empty bot response");
-    } else {
-        console.log("handleBotResponse: processedBotResponse:", processedBotResponse);
-    }
-    await sendMessage(peerId, messageId, processedBotResponse);
+    await sendMessage(peerId, messageId, botResponse);
     persistAnsweredMessage(peerId, messageId);
     console.log("handleBotResponse: done");
 }

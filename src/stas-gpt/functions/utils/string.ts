@@ -17,9 +17,16 @@ export function extractResponse(inputStr: string): string {
             lastMatch = match;
         }
 
-        const result = lastMatch
+        let result = lastMatch
             ? inputStr.substring(lastMatch.index + lastMatch[0].length).trim()
             : inputStr;
+
+        if (result === "") {
+            result = ERROR_MESSAGE_STRING;
+            console.log("extractResponse: empty result");
+        } else {
+            console.log("extractResponse: result:", result);
+        }
 
         return result;
     } catch (error) {
