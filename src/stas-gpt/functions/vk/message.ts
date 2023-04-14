@@ -136,6 +136,7 @@ export async function initAnsweredMessages(): Promise<void> {
             }
         } else {
             console.warn("fetchAnsweredMessages: answeredMessages value is null!");
+            globalThis.answeredMessages = [];
         }
     } catch (error) {
         console.error("fetchAnsweredMessages: Error fetching answeredMessages from KV: error:", error);
